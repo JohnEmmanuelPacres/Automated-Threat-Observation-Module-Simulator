@@ -1,0 +1,66 @@
+# Project Setup Guide
+
+Follow these steps to set up and run the project locally on your machine.
+
+## Prerequisites
+
+- **Python 3.8 or higher**: Ensure Python is installed and added to your system's PATH.
+- **Git**: (Optional) To clone the repository.
+
+## Installation
+
+1.  **Clone or Download the Repository**
+    If you haven't already, download the project files to a local directory.
+
+2.  **Create a Virtual Environment**
+    It is recommended to use a virtual environment to manage dependencies. Open your terminal or command prompt in the project directory and run:
+
+    ```bash
+    # Windows
+    python -m venv venv
+
+    # macOS/Linux
+    python3 -m venv venv
+    ```
+
+3.  **Activate the Virtual Environment**
+
+    ```bash
+    # Windows
+    .\venv\Scripts\activate
+
+    # macOS/Linux
+    source venv/bin/activate
+    ```
+
+4.  **Install Dependencies**
+    Install the required Python packages listed in `requirements.txt`:
+
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+    *Note: This project uses `torch` and `ultralytics`. The installation might take a few minutes depending on your internet connection.*
+
+## Running the Application
+
+Once the dependencies are installed, you can start the application:
+
+```bash
+python app.py
+```
+
+The application window ("mmWave Simulator UI") should appear.
+
+## Project Structure
+
+- `app.py`: Main application entry point containing the UI logic.
+- `mmwave_simul.py`: Simulator logic for mmWave sensor data.
+- `atm_card.py` & `atm_keypad.py`: Components for the ATM simulation.
+- `requirements.txt`: List of Python dependencies.
+- `*.pt`: Pre-trained YOLO models used for detection.
+
+## Troubleshooting
+
+- **Missing Models**: If the application fails to load model files (e.g., `yolov8n.pt`), ensure they are present in the root directory. The `ultralytics` library may attempt to download them automatically if missing.
+- **Camera Issues**: The application uses `cv2` to access the webcam. Ensure your camera is connected and not being used by another application.

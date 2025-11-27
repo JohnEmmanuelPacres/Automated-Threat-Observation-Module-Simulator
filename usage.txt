@@ -1,0 +1,64 @@
+# System Usage Guide
+
+This guide explains how to operate the mmWave Simulator UI and its security features.
+
+## Basic Operation
+
+1.  **Start the System**:
+    - Click the green **"CAMERA ON"** button to start the simulation and camera feed.
+    - The status bar will change to "Status: CAMERA ON".
+
+2.  **ATM Interaction**:
+    - **Insert Card**: Drag the virtual ATM card (bottom right) into the card slot.
+    - **Enter PIN**: Use the keypad to enter a 4-digit PIN (any 4 digits work for simulation). Press **ENTER**.
+    - **Withdraw Cash**: Enter an amount and press **ENTER**.
+    - **Eject Card**: Click the **"EJECT CARD"** button or wait for the transaction to finish.
+
+## Security Features
+
+### 1. Hidden Weapon Detection
+*Detects dangerous objects like guns, knives, or skimmers.*
+
+- **Activation**: Click the **"Weapon: OFF"** button in the top control panel to toggle it to **"Weapon: ON"** (Red).
+- **How it works**: The system uses an AI model to scan the video feed for weapons.
+- **Trigger**: If a weapon is detected with high confidence:
+    - A red box highlights the weapon on the screen.
+    - The screen border flashes red.
+    - A voice alert announces "Warning. Weapon detected."
+- **System Response**:
+    - The ATM immediately **LOCKS** ("SYSTEM LOCKED").
+    - The card is automatically **ejected**.
+    - A safety alert overlay appears: "POTENTIAL THREAT DETECTED. ARE YOU SAFE?".
+    - An emergency alarm sounds.
+
+### 2. Peeking Detection
+*Detects suspicious behavior from others while a user is transacting.*
+
+- **Activation**: Automatically active whenever a **card is inserted** in the ATM.
+- **How it works**: The system tracks the body pose of all individuals in view.
+- **Triggers**:
+    - **Side Peeking**: A person's face is detected peering from the extreme edges of the camera frame.
+    - **Shoulder Surfing**: A person stands suspiciously close (behind) the active user.
+- **System Response**:
+    - A warning appears on the video feed: "WARNING: PEEKING (SIDE)" or "WARNING: PEEKING (BEHIND)".
+    - If the behavior persists, the system pauses the transaction and asks: "SOMEONE IS WATCHING YOU? CONTINUE TRANSACTION?".
+    - You can choose to **"CONFIRM SAFE"** to continue or **"EMERGENCY ALERT"** to trigger the alarm.
+
+### 3. "Hands Up" Detection
+*Detects if a person is being coerced or held up.*
+
+- **Activation**: Always active during simulation.
+- **How it works**: The system analyzes body language to detect if a person has their hands raised above their head.
+- **Trigger**: Both wrists are detected above the eyes.
+- **System Response**:
+    - Displays "THREAT: HANDS UP" on the screen.
+    - Flashes the screen border red.
+    - Triggers a voice alert and the safety confirmation screen.
+
+## View Modes
+
+Use the dropdown menu in the control panel to change how the system visualizes data:
+- **Full Debug**: Shows all detection boxes, skeletons, and debug info.
+- **Standard Monitoring**: A cleaner view for general surveillance.
+- **Privacy Mode**: Blurs faces to protect identity.
+- **Security Mode**: High-contrast mode focused on threat detection.
