@@ -89,6 +89,43 @@ class App(ctk.CTk):
 		self.protocol("WM_DELETE_WINDOW", self._on_close)
 
 		self.setup_atm_ui()
+		self.show_loading_screen()
+
+	def show_loading_screen(self):
+		self.loading_frame = ctk.CTkFrame(self, fg_color="#101010")
+		self.loading_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+		self.loading_label = ctk.CTkLabel(self.loading_frame, text="ATOM SIMULATOR\nInitializing System...", font=("Arial", 24, "bold"))
+		self.loading_label.place(relx=0.5, rely=0.4, anchor="center")
+
+		self.progress_bar = ctk.CTkProgressBar(self.loading_frame, width=400, mode="determinate")
+		self.progress_bar.place(relx=0.5, rely=0.5, anchor="center")
+		self.progress_bar.set(0)
+
+		self.loading_status = ctk.CTkLabel(self.loading_frame, text="Starting...", font=("Arial", 12))
+		self.loading_status.place(relx=0.5, rely=0.55, anchor="center")
+
+		self.loading_step = 0
+		self.after(500, self.update_loading)
+
+	def update_loading(self):
+		steps = [
+			(0.1, "Loading UI Components..."),
+			(0.3, "Initializing Camera Interface..."),
+			(0.5, "Loading AI Models (YOLOv8)..."),
+			(0.7, "Configuring mmWave Simulation..."),
+			(0.9, "Establishing Secure Connection..."),
+			(1.0, "System Ready")
+		]
+
+		if self.loading_step < len(steps):
+			progress, text = steps[self.loading_step]
+			self.progress_bar.set(progress)
+			self.loading_status.configure(text=text)
+			self.loading_step += 1
+			self.after(600, self.update_loading)
+		else:
+			self.loading_frame.destroy()
 
 	def setup_atm_ui(self):
 		self.atm_frame = ctk.CTkFrame(self, width=300)
