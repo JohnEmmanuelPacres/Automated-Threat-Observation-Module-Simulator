@@ -42,7 +42,7 @@ class App(ctk.CTk):
 		self.weapon_btn = ctk.CTkButton(self.controls_frame, text="Weapon: OFF", state="disabled", command=self.toggle_weapon)
 		self.weapon_btn.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
 
-		self.coercion_btn = ctk.CTkButton(self.controls_frame, text="Simulate Coercion", state="disabled", command=self.simulate_coercion, fg_color="orange")
+		self.coercion_btn = ctk.CTkButton(self.controls_frame, text="Simulate Coercion", state="disabled", command=self.simulate_coercion, fg_color="blue")
 		self.coercion_btn.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
 
 		self.view_mode_var = ctk.StringVar(value="Full Debug")

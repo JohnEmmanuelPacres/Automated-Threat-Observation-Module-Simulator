@@ -55,6 +55,17 @@ This guide explains how to operate the mmWave Simulator UI and its security feat
     - Flashes the screen border red.
     - Triggers a voice alert and the safety confirmation screen.
 
+### 4. High Stress / Coercion Simulation
+*Simulates a scenario where the user is under extreme stress (e.g., being held hostage).*
+
+- **Activation**: Click the **"Simulate Coercion"** button (Orange) in the control panel.
+- **How it works**: The system simulates a spike in the current user's heart rate (> 120 BPM) using mmWave vital sign monitoring logic.
+- **Trigger**: Heart rate exceeds the safety threshold.
+- **System Response**:
+    - Displays "HIGH STRESS DETECTED" on the video feed.
+    - A safety alert overlay appears: "HIGH STRESS DETECTED. ARE YOU UNDER DURESS?".
+    - You can confirm safety or trigger the emergency alarm.
+
 ## View Modes
 
 Use the dropdown menu in the control panel to change how the system visualizes data:

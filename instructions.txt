@@ -44,6 +44,8 @@ Follow these steps to set up and run the project locally on your machine.
 
 ## Running the Application
 
+### Option 1: Running from Source
+
 Once the dependencies are installed, you can start the application:
 
 ```bash
@@ -51,6 +53,10 @@ python app.py
 ```
 
 The application window ("mmWave Simulator UI") should appear.
+
+### Option 2: Running the Executable
+
+Simply double-click the shortcut file named `Automated Threat Observation Module (ATOM) Simulator.exe - Shortcut` located in the root directory. This will launch the application without needing to install Python or dependencies manually.
 
 ## Project Structure
 
