@@ -418,6 +418,9 @@ class App(ctk.CTk):
 		print("EMERGENCY TRIGGERED!")
 		
 		# Visual feedback
+		self.safety_label2.pack_forget() # Hide the "Watching you" label if present
+		self.safety_label.pack(pady=(30, 20), padx=40) # Ensure main label is visible
+
 		self.safety_label.configure(text="AUTHORITIES CONTACTED\nSTAY CALM")
 		self.safe_btn.pack_forget()
 		self.emergency_btn.configure(text="ALARM ACTIVE", state="disabled")
