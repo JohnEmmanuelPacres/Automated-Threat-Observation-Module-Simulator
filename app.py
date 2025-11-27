@@ -271,7 +271,7 @@ class App(ctk.CTk):
 		if self.sim:
 			self.sim.stop()
 			self.sim = None
-		self.status_label.configure(text="Status: CAMERAOFF")
+		self.status_label.configure(text="Status: CAMERA OFF")
 		self.start_btn.configure(state="normal")
 		self.stop_btn.configure(state="disabled", fg_color="gray")
 		self.weapon_btn.configure(state="disabled")
