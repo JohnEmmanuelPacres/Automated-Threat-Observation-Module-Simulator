@@ -1,6 +1,6 @@
 Team Name: Positive Neutrons
 
 Members:
-David, Kem Philip S.
-Duran, Excel Joseph F.
-Pacres, John Emmanuel O.
+David, Kem Philip S. - researcher
+Duran, Excel Joseph F. - model designer
+Pacres, John Emmanuel O. - programmer
