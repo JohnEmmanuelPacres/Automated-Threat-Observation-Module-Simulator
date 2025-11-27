@@ -293,6 +293,10 @@ def render_point_cloud(points, img_w, img_h, title="Point Cloud", noise_level=0.
 class VitalSignSimulator:
     def __init__(self):
         self.people_vitals = {}  # Map track_id or index to vital state
+        self.coercion_active = False
+
+    def set_coercion(self, active):
+        self.coercion_active = active
 
     def get_vitals(self, person_id):
         """Returns current heart rate, breath rate, and a waveform point."""
@@ -311,8 +315,12 @@ class VitalSignSimulator:
         v = self.people_vitals[person_id]
         
         # Simulate slight fluctuations
-        current_hr = v['base_hr'] + math.sin(now * 0.5) * 5
-        current_br = v['base_br'] + math.sin(now * 0.2) * 2
+        if self.coercion_active and person_id == 0:
+            current_hr = random.uniform(130, 150)
+            current_br = random.uniform(25, 35)
+        else:
+            current_hr = v['base_hr'] + math.sin(now * 0.5) * 5
+            current_br = v['base_br'] + math.sin(now * 0.2) * 2
         
         # Generate waveform point (Composite of Heart + Breath)
         # Breathing is slow/high amplitude, Heart is fast/low amplitude
@@ -385,6 +393,9 @@ class MMSimulator:
 
     def toggle_weapon_mode(self):
         self.weapon_mode = not self.weapon_mode
+
+    def trigger_coercion(self):
+        self.vitals_sim.set_coercion(True)
 
     def set_view_mode(self, mode):
         self.view_mode = mode
@@ -772,6 +783,10 @@ class MMSimulator:
                         # --- VITAL SIGNS VISUALIZATION ---
                         hr, br, waveform = self.vitals_sim.get_vitals(0) # Use 0 as ID for current user
                         
+                        if hr > 120:
+                            threat_detected = "HIGH_HR"
+                            cv2.putText(annotated, "HIGH STRESS DETECTED", (x1, y1-65), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
                         # Draw Vitals Box
                         v_w = 150
                         v_h = 100

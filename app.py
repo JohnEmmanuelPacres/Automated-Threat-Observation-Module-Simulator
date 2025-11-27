@@ -31,7 +31,7 @@ class App(ctk.CTk):
 		# Control Panel (Top)
 		self.controls_frame = ctk.CTkFrame(self)
 		self.controls_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
-		self.controls_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
+		self.controls_frame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
 
 		self.start_btn = ctk.CTkButton(self.controls_frame, text="CAMERA ON", command=self.start_sim, state="normal", fg_color="green")
 		self.start_btn.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
@@ -42,10 +42,13 @@ class App(ctk.CTk):
 		self.weapon_btn = ctk.CTkButton(self.controls_frame, text="Weapon: OFF", state="disabled", command=self.toggle_weapon)
 		self.weapon_btn.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
 
+		self.coercion_btn = ctk.CTkButton(self.controls_frame, text="Simulate Coercion", state="disabled", command=self.simulate_coercion, fg_color="orange")
+		self.coercion_btn.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
+
 		self.view_mode_var = ctk.StringVar(value="Full Debug")
 		self.view_mode_menu = ctk.CTkOptionMenu(self.controls_frame, values=["Full Debug", "Standard Monitoring", "Privacy Mode", "Security Mode"],
 												command=self.change_view_mode, variable=self.view_mode_var, state="disabled")
-		self.view_mode_menu.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
+		self.view_mode_menu.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
 
 		# Video Display (Middle)
 		self.video_label = ctk.CTkLabel(self, text="Press CAMERA ON to run simulation", width=960, height=720)
@@ -259,6 +262,7 @@ class App(ctk.CTk):
 		self.start_btn.configure(state="disabled")
 		self.stop_btn.configure(state="normal", fg_color="red")
 		self.weapon_btn.configure(state="normal")
+		self.coercion_btn.configure(state="normal", text="Simulate Coercion", fg_color="orange")
 		self.view_mode_menu.configure(state="normal")
 		self._schedule_update()
 
@@ -271,6 +275,7 @@ class App(ctk.CTk):
 		self.start_btn.configure(state="normal")
 		self.stop_btn.configure(state="disabled", fg_color="gray")
 		self.weapon_btn.configure(state="disabled")
+		self.coercion_btn.configure(state="disabled", text="Simulate Coercion", fg_color="orange")
 		self.view_mode_menu.configure(state="disabled")
 		if self._update_job:
 			self.after_cancel(self._update_job)
@@ -284,6 +289,11 @@ class App(ctk.CTk):
 			self.weapon_btn.configure(text="Weapon: ON", fg_color="red")
 		else:
 			self.weapon_btn.configure(text="Weapon: OFF", fg_color="#1F6AA5")
+
+	def simulate_coercion(self):
+		if self.sim:
+			self.sim.trigger_coercion()
+			self.coercion_btn.configure(text="Coercion Active", fg_color="red")
 
 	def change_view_mode(self, choice):
 		if self.sim:
@@ -318,6 +328,10 @@ class App(ctk.CTk):
 						if threat_detected == "WEAPON_LOCK":
 							if not self.is_safety_mode or self.atm_state != "LOCKED":
 								self.lock_atm_and_alert()
+						elif threat_detected == "HIGH_HR":
+							if not self.is_safety_mode:
+								self.is_safety_mode = True
+								self.show_safety_alert("HIGH_HR")
 						elif not self.is_safety_mode:
 							# Dynamic buffer: 30s for peeking, 0s (immediate) for weapons/hands
 							required_buffer = 30.0 if threat_detected == "PEEKING" else 0.0
@@ -371,7 +385,11 @@ class App(ctk.CTk):
 		# Show appropriate label
 		if threat_type == "PEEKING":
 			self.safety_label2.pack(pady=(30, 20), padx=40)
+		elif threat_type == "HIGH_HR":
+			self.safety_label.configure(text="HIGH STRESS DETECTED\nARE YOU UNDER DURESS?")
+			self.safety_label.pack(pady=(30, 20), padx=40)
 		else:
+			self.safety_label.configure(text="POTENTIAL THREAT DETECTED\nARE YOU SAFE?")
 			self.safety_label.pack(pady=(30, 20), padx=40)
 
 		# Place the safety frame over the video
@@ -382,6 +400,11 @@ class App(ctk.CTk):
 	def confirm_safe(self):
 		if self.sim:
 			self.sim.clear_recording()
+			# Reset coercion mode if it was active
+			if self.sim.vitals_sim.coercion_active:
+				self.sim.vitals_sim.set_coercion(False)
+				self.coercion_btn.configure(text="Simulate Coercion", fg_color="orange")
+
 		self.is_safety_mode = False
 		self.safety_frame.place_forget()
 		self.safety_label.pack_forget()
@@ -422,6 +445,11 @@ class App(ctk.CTk):
 	def _reset_safety_ui(self):
 		if self.sim:
 			self.sim.save_recording()
+			# Reset coercion mode if it was active
+			if self.sim.vitals_sim.coercion_active:
+				self.sim.vitals_sim.set_coercion(False)
+				self.coercion_btn.configure(text="Simulate Coercion", fg_color="orange")
+
 		self.is_safety_mode = False
 		self.safety_frame.place_forget()
 		self.safety_label.pack_forget()
