@@ -446,7 +446,11 @@ class MMSimulator:
             print("Recording cleared.")
 
     def _run(self):
-        self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        if os.name == 'nt':
+            self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        else:
+            self.cap = cv2.VideoCapture(0)
+            
         if not self.cap.isOpened():
             print("ERROR: Camera not opened")
             self.running = False
