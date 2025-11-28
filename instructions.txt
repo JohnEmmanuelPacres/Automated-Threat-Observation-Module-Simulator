@@ -58,6 +58,25 @@ The application window ("mmWave Simulator UI") should appear.
 
 Simply double-click the shortcut file named `Automated Threat Observation Module (ATOM) Simulator.exe - Shortcut` located in the root directory. This will launch the application without needing to install Python or dependencies manually.
 
+## Building the Executable
+
+If you modify the code and want to rebuild the standalone executable, use **PyInstaller**.
+
+1.  **Install PyInstaller**:
+    ```bash
+    pip install pyinstaller
+    ```
+
+2.  **Run the Build Command**:
+    Run the following command in your terminal to generate the `.exe` file. This bundles all necessary data files and dependencies.
+
+    ```bash
+    python -m PyInstaller --noconfirm --onedir --windowed --add-data "weapons.pt;." --add-data "yolov8n-pose.pt;." --add-data "yolov8n.pt;." --collect-all customtkinter --name "Automated Threat Observation Module (ATOM) Simulator" app.py
+    ```
+
+3.  **Locate the Output**:
+    The new executable will be located in the `dist/Automated Threat Observation Module (ATOM) Simulator/` directory.
+
 ## Project Structure
 
 - `app.py`: Main application entry point containing the UI logic.
