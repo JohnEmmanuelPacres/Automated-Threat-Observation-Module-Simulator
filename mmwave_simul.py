@@ -346,6 +346,7 @@ class MMSimulator:
         self.weapon_mode = False
         self.view_mode = "Full Debug" # Default
         self.card_inserted = False
+        self.skimmer_sim_active = False
         
         self.vitals_sim = VitalSignSimulator()
         
@@ -373,6 +374,7 @@ class MMSimulator:
         
         # Tracking state
         self.locked_user_center = None
+        self.weapon_persistence = 0 # Counter for consecutive weapon detections
         
         # Recording state
         self.is_recording = False
@@ -396,6 +398,9 @@ class MMSimulator:
 
     def trigger_coercion(self):
         self.vitals_sim.set_coercion(True)
+
+    def trigger_skimmer_simulation(self):
+        self.skimmer_sim_active = True
 
     def set_view_mode(self, mode):
         self.view_mode = mode
@@ -464,6 +469,7 @@ class MMSimulator:
                 # Run weapon detection if model is loaded AND weapon mode is active
                 detected_weapon_boxes = []
                 any_weapon_detected = False
+                skimmer_detected = False
                 if self.weapon_mode and self.weapon_model:
                     weapon_results = self.weapon_model(frame, verbose=False)
                     for r in weapon_results:
@@ -476,7 +482,8 @@ class MMSimulator:
                             # Filter for specific threats
                             threats = ['knife', 'scissors', 'gun', 'pistol', 'skimmer']
                             
-                            if wlabel in threats and wconf > 0.4:
+                            # Increased confidence threshold to 0.5 to reduce false positives
+                            if wlabel in threats and wconf > 0.5:
                                 any_weapon_detected = True
                                 detected_weapon_boxes.append((wx1, wy1, wx2, wy2))
                                 label_text = f"{wlabel} {wconf:.2f}"
@@ -485,14 +492,31 @@ class MMSimulator:
                                 cv2.rectangle(annotated, (wx1, wy1), (wx2, wy2), (0, 0, 255), 3)
                                 cv2.putText(annotated, label_text, (wx1, wy1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
                                 
-                                # Alert
-                                cv2.putText(annotated, f"REAL THREAT: {wlabel.upper()}", (50, 150), 
-                                            cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+                                if wlabel == 'skimmer':
+                                    skimmer_detected = True
+                                    # Alert
+                                    cv2.putText(annotated, f"SKIMMER DETECTED", (50, 150), 
+                                                cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+                                    # Voice Alert
+                                    self.voice_alert.speak(f"Warning. Card skimmer detected.")
+                                else:
+                                    # Alert
+                                    cv2.putText(annotated, f"REAL THREAT DETECTED", (50, 150), 
+                                                cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+                                    # Voice Alert
+                                    self.voice_alert.speak(f"Warning. Weapon detected.")
+                                
                                 # Flash screen border red
                                 cv2.rectangle(annotated, (0,0), (width, height), (0, 0, 255), 10)
-                                
-                                # Voice Alert
-                                self.voice_alert.speak(f"Warning. Weapon detected.")
+
+                # SIMULATE SKIMMER IF ACTIVE
+                if self.skimmer_sim_active:
+                    skimmer_detected = True
+                    any_weapon_detected = True
+                    cv2.putText(annotated, "SIMULATED SKIMMER DETECTED", (50, 150), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+                    cv2.rectangle(annotated, (0,0), (width, height), (0, 0, 255), 10)
+                    self.voice_alert.speak("Warning. Card skimmer detected.")
 
                 # ATM Overlay on Annotated - MOVED TO END
                 # cv2.putText(annotated, "ATM CAMERA 01", (10, height - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
@@ -558,19 +582,19 @@ class MMSimulator:
                         if self.locked_user_center:
                             # Find person closest to locked center (Tracking)
                             best_person = None
-                            min_dist = float('inf')
+                            min_dist = 200.0 # Tracking threshold
                             
                             for p in detected_persons:
                                 x1, y1, x2, y2 = p['coords']
                                 cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
                                 dist = math.sqrt((cx - self.locked_user_center[0])**2 + (cy - self.locked_user_center[1])**2)
                                 
+                                # Find the person closest to the locked center in 2D space
                                 if dist < min_dist:
                                     min_dist = dist
                                     best_person = p
                             
-                            # Threshold for tracking (e.g., 200 pixels movement between frames)
-                            if best_person and min_dist < 200:
+                            if best_person:
                                 nearest_person = best_person
                                 # Update locked center
                                 nx1, ny1, nx2, ny2 = nearest_person['coords']
@@ -743,21 +767,76 @@ class MMSimulator:
                                 frame[by1:by2, bx1:bx2] = cv2.GaussianBlur(roi_f, (99, 99), 30)
 
                     # --- LOGIC 4: Weapon Simulation (Keyboard Trigger) ---
-                    if self.weapon_mode and is_nearest and keypoints is not None:
-                         # YOLO Keypoint Index 12: Right Hip
+                    # Check if this person is the nearest one (regardless of card insertion for simulation)
+                    if self.weapon_mode and (p == nearest_person) and keypoints is not None:
+                         # YOLO Keypoint Indices: 11: Left Hip, 12: Right Hip
                          if len(keypoints) > 12:
+                            left_hip = keypoints[11]
                             right_hip = keypoints[12]
-                            if right_hip[2] > conf_thresh:
-                                hip_x, hip_y = int(right_hip[0]), int(right_hip[1])
+                            
+                            waist_x, waist_y = 0, 0
+                            valid_waist = False
+
+                            # Get shoulder Y for sanity checks
+                            l_sh_y = left_shoulder[1] if left_shoulder[2] > conf_thresh else 0
+                            r_sh_y = right_shoulder[1] if right_shoulder[2] > conf_thresh else 0
+                            avg_shoulder_y = 0
+                            if l_sh_y and r_sh_y:
+                                avg_shoulder_y = (l_sh_y + r_sh_y) / 2
+                            elif l_sh_y:
+                                avg_shoulder_y = l_sh_y
+                            elif r_sh_y:
+                                avg_shoulder_y = r_sh_y
+                            
+                            # 1. Try to use detected hips
+                            if left_hip[2] > conf_thresh and right_hip[2] > conf_thresh:
+                                waist_x = int((left_hip[0] + right_hip[0]) / 2)
+                                waist_y = int((left_hip[1] + right_hip[1]) / 2)
+                                valid_waist = True
+                            elif right_hip[2] > conf_thresh:
+                                waist_x, waist_y = int(right_hip[0]), int(right_hip[1])
+                                valid_waist = True
+                            elif left_hip[2] > conf_thresh:
+                                waist_x, waist_y = int(left_hip[0]), int(left_hip[1])
+                                valid_waist = True
+                            
+                            # Sanity Check: Hips must be below shoulders
+                            if valid_waist and avg_shoulder_y > 0:
+                                if waist_y < avg_shoulder_y:
+                                    valid_waist = False
+
+                            # 2. Fallback: Estimate waist from bounding box if hips not detected
+                            if not valid_waist:
+                                has_shoulders = (avg_shoulder_y > 0)
+                                has_face = (nose[2] > conf_thresh)
+
+                                if has_shoulders:
+                                    # Calculate potential waist from bbox
+                                    est_waist_y = int(y1 + (y2 - y1) * 0.6)
+                                    # Only valid if estimated waist is significantly below shoulders
+                                    if est_waist_y > avg_shoulder_y + (y2 - y1) * 0.15:
+                                        waist_x = int((x1 + x2) / 2)
+                                        waist_y = est_waist_y
+                                        valid_waist = True
+                                elif not has_face:
+                                    # No face and no shoulders, use bbox fallback
+                                    waist_x = int((x1 + x2) / 2)
+                                    waist_y = int(y1 + (y2 - y1) * 0.6)
+                                    valid_waist = True
+                                # Else: Has face but no shoulders -> Headshot -> No waist
                                 
-                                # Draw "Heatmap" (Red Blob)
+                            if valid_waist:
+                                # Draw "Heatmap" (Red Blob) at waist
                                 overlay_blob = annotated.copy()
-                                cv2.circle(overlay_blob, (hip_x, hip_y), 60, (0, 0, 255), -1)
+                                cv2.circle(overlay_blob, (waist_x, waist_y), 60, (0, 0, 255), -1)
                                 annotated = cv2.addWeighted(overlay_blob, 0.6, annotated, 0.4, 0)
                                 
                                 # Text Alert
-                                cv2.putText(annotated, "DENSITY ANOMALY DETECTED (mmWave)", (50, 100), 
+                                cv2.putText(annotated, "DENSITY ANOMALY DETECTED (WAIST)", (50, 100), 
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+                                
+                                # Treat as a weapon detection for the system
+                                any_weapon_detected = True
                     
                     # Estimate distance for Point Cloud
                     if dist_z > 0:
@@ -844,10 +923,19 @@ class MMSimulator:
 
                 # Determine final threat status based on weapon ownership
                 if any_weapon_detected:
-                    if not self.card_inserted or current_user_has_weapon:
-                        threat_detected = "WEAPON_LOCK"
-                    elif threat_detected is None:
-                        threat_detected = "WEAPON"
+                    self.weapon_persistence += 1
+                else:
+                    self.weapon_persistence = max(0, self.weapon_persistence - 1)
+
+                # Require 5 consecutive frames of detection before triggering lock
+                if self.weapon_persistence > 5:
+                    if any_weapon_detected: # Ensure it's currently detected too
+                        if skimmer_detected:
+                            threat_detected = "SKIMMER"
+                        elif not self.card_inserted or current_user_has_weapon:
+                            threat_detected = "WEAPON_LOCK"
+                        elif threat_detected is None:
+                            threat_detected = "WEAPON"
 
                 # Combine all points
                 if all_pcl_points:

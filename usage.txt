@@ -16,22 +16,32 @@ This guide explains how to operate the mmWave Simulator UI and its security feat
 
 ## Security Features
 
-### 1. Hidden Weapon Detection
-*Detects dangerous objects like guns, knives, or skimmers.*
+### 1. Hidden Weapon & Anomaly Detection
+*Detects dangerous objects like guns, knives, and hidden density anomalies (concealed weapons).*
 
 - **Activation**: Click the **"Weapon: OFF"** button in the top control panel to toggle it to **"Weapon: ON"** (Red).
-- **How it works**: The system uses an AI model to scan the video feed for weapons.
-- **Trigger**: If a weapon is detected with high confidence:
-    - A red box highlights the weapon on the screen.
-    - The screen border flashes red.
-    - A voice alert announces "Warning. Weapon detected."
+- **How it works**:
+    - **Visual Recognition**: Uses AI to scan for visible weapons (guns, knives).
+    - **Density Anomaly (Waist)**: Analyzes the waist area of the current user for "density anomalies" (simulated hidden objects) using mmWave logic.
+- **Triggers**:
+    - A visible weapon is detected with high confidence.
+    - A density anomaly (red heatmap blob) is detected at the user's waist.
 - **System Response**:
-    - The ATM immediately **LOCKS** ("SYSTEM LOCKED").
-    - The card is automatically **ejected**.
-    - A safety alert overlay appears: "POTENTIAL THREAT DETECTED. ARE YOU SAFE?".
-    - An emergency alarm sounds.
+    - **Visuals**: Red box around weapons, or a red heatmap blob at the waist.
+    - **Alerts**: Screen flashes red, voice alert "Warning. Weapon detected" or "Density anomaly detected".
+    - **Action**: ATM locks immediately ("SYSTEM LOCKED"), card ejects, and safety alert appears.
 
-### 2. Peeking Detection
+### 2. Skimmer Detection
+*Detects illegal card skimming devices attached to the ATM.*
+
+- **Activation**: Click the **"Simulate Skimmer"** button (Purple) to test the response.
+- **How it works**: Simulates the detection of a foreign device over the card slot.
+- **System Response**:
+    - **Visuals**: "SKIMMER DETECTED" warning on screen.
+    - **Action**: ATM locks immediately with message "SKIMMER DETECTED - DO NOT USE".
+    - **Voice**: "Warning. Card skimmer detected."
+
+### 3. Peeking Detection
 *Detects suspicious behavior from others while a user is transacting.*
 
 - **Activation**: Automatically active whenever a **card is inserted** in the ATM.
@@ -44,7 +54,7 @@ This guide explains how to operate the mmWave Simulator UI and its security feat
     - If the behavior persists, the system pauses the transaction and asks: "SOMEONE IS WATCHING YOU? CONTINUE TRANSACTION?".
     - You can choose to **"CONFIRM SAFE"** to continue or **"EMERGENCY ALERT"** to trigger the alarm.
 
-### 3. "Hands Up" Detection
+### 4. "Hands Up" Detection
 *Detects if a person is being coerced or held up.*
 
 - **Activation**: Always active during simulation.
@@ -55,7 +65,7 @@ This guide explains how to operate the mmWave Simulator UI and its security feat
     - Flashes the screen border red.
     - Triggers a voice alert and the safety confirmation screen.
 
-### 4. High Stress / Coercion Simulation
+### 5. High Stress / Coercion Simulation
 *Simulates a scenario where the user is under extreme stress (e.g., being held hostage).*
 
 - **Activation**: Click the **"Simulate Coercion"** button (Orange) in the control panel.
@@ -65,6 +75,16 @@ This guide explains how to operate the mmWave Simulator UI and its security feat
     - Displays "HIGH STRESS DETECTED" on the video feed.
     - A safety alert overlay appears: "HIGH STRESS DETECTED. ARE YOU UNDER DURESS?".
     - You can confirm safety or trigger the emergency alarm.
+
+### 6. Evidence Collection
+*Automatic video recording of security events.*
+
+- **Trigger**: Starts automatically whenever a threat is detected (Weapon, Skimmer, Coercion, etc.).
+- **Storage**: Videos are saved to the `recordings/` folder in the application directory.
+- **Format**: Timestamped AVI files (e.g., `evidence_YYYYMMDD_HHMMSS.avi`).
+- **Features**:
+    - **Auto-Recording**: Captures the event while the threat is active.
+    - **Night Mode**: Automatically switches to simulated IR (grayscale) if lighting is low.
 
 ## View Modes
 

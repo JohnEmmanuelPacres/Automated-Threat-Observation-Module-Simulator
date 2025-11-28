@@ -65,6 +65,7 @@ Simply double-click the shortcut file named `Automated Threat Observation Module
 - `atm_card.py` & `atm_keypad.py`: Components for the ATM simulation.
 - `requirements.txt`: List of Python dependencies.
 - `*.pt`: Pre-trained YOLO models used for detection.
+- `recordings/`: Directory where evidence videos are saved (created automatically).
 
 ## Troubleshooting
 

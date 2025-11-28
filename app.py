@@ -31,7 +31,7 @@ class App(ctk.CTk):
 		# Control Panel (Top)
 		self.controls_frame = ctk.CTkFrame(self)
 		self.controls_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
-		self.controls_frame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
+		self.controls_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
 
 		self.start_btn = ctk.CTkButton(self.controls_frame, text="CAMERA ON", command=self.start_sim, state="normal", fg_color="green")
 		self.start_btn.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
@@ -45,10 +45,13 @@ class App(ctk.CTk):
 		self.coercion_btn = ctk.CTkButton(self.controls_frame, text="Simulate Coercion", state="disabled", command=self.simulate_coercion, fg_color="blue")
 		self.coercion_btn.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
 
+		self.skimmer_btn = ctk.CTkButton(self.controls_frame, text="Simulate Skimmer", state="disabled", command=self.simulate_skimmer, fg_color="purple")
+		self.skimmer_btn.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
+
 		self.view_mode_var = ctk.StringVar(value="Full Debug")
 		self.view_mode_menu = ctk.CTkOptionMenu(self.controls_frame, values=["Full Debug", "Standard Monitoring", "Privacy Mode", "Security Mode"],
 												command=self.change_view_mode, variable=self.view_mode_var, state="disabled")
-		self.view_mode_menu.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
+		self.view_mode_menu.grid(row=0, column=5, padx=5, pady=5, sticky="ew")
 
 		# Video Display (Middle)
 		self.video_label = ctk.CTkLabel(self, text="Press CAMERA ON to run simulation", width=960, height=720)
@@ -300,6 +303,7 @@ class App(ctk.CTk):
 		self.stop_btn.configure(state="normal", fg_color="red")
 		self.weapon_btn.configure(state="normal")
 		self.coercion_btn.configure(state="normal", text="Simulate Coercion", fg_color="orange")
+		self.skimmer_btn.configure(state="normal", text="Simulate Skimmer", fg_color="purple")
 		self.view_mode_menu.configure(state="normal")
 		self._schedule_update()
 
@@ -313,6 +317,7 @@ class App(ctk.CTk):
 		self.stop_btn.configure(state="disabled", fg_color="gray")
 		self.weapon_btn.configure(state="disabled")
 		self.coercion_btn.configure(state="disabled", text="Simulate Coercion", fg_color="orange")
+		self.skimmer_btn.configure(state="disabled", text="Simulate Skimmer", fg_color="purple")
 		self.view_mode_menu.configure(state="disabled")
 		if self._update_job:
 			self.after_cancel(self._update_job)
@@ -331,6 +336,11 @@ class App(ctk.CTk):
 		if self.sim:
 			self.sim.trigger_coercion()
 			self.coercion_btn.configure(text="Coercion Active", fg_color="red")
+
+	def simulate_skimmer(self):
+		if self.sim:
+			self.sim.trigger_skimmer_simulation()
+			self.skimmer_btn.configure(text="Skimmer Active", fg_color="red")
 
 	def change_view_mode(self, choice):
 		if self.sim:
@@ -362,13 +372,15 @@ class App(ctk.CTk):
 					
 					# Check threat
 					if threat_detected:
-						if threat_detected == "WEAPON_LOCK":
-							if not self.is_safety_mode or self.atm_state != "LOCKED":
-								self.lock_atm_and_alert()
+						if threat_detected == "WEAPON_LOCK" or threat_detected == "SKIMMER":
+							# Check grace period (3 seconds) and ensure we don't re-trigger if already in safety mode
+							if (not self.is_safety_mode) and (time.time() - self.last_safety_confirm_time > 3.0):
+								self.lock_atm_and_alert(threat_detected)
 						elif threat_detected == "HIGH_HR":
 							if not self.is_safety_mode:
-								self.is_safety_mode = True
-								self.show_safety_alert("HIGH_HR")
+								if time.time() - self.last_safety_confirm_time > 2.0:
+									self.is_safety_mode = True
+									self.show_safety_alert("HIGH_HR")
 						elif not self.is_safety_mode:
 							# Dynamic buffer: 30s for peeking, 0s (immediate) for weapons/hands
 							required_buffer = 30.0 if threat_detected == "PEEKING" else 0.0
@@ -403,13 +415,16 @@ class App(ctk.CTk):
 		# schedule next update
 		self._update_job = self.after(30, self._update_frame)
 
-	def lock_atm_and_alert(self):
+	def lock_atm_and_alert(self, threat_type="WEAPON"):
 		self.is_safety_mode = True
 		self.atm_state = "LOCKED"
-		self.update_atm_screen("SYSTEM LOCKED\nTHREAT DETECTED")
+		if threat_type == "SKIMMER":
+			self.update_atm_screen("SKIMMER DETECTED\nDO NOT USE")
+		else:
+			self.update_atm_screen("SYSTEM LOCKED\nTHREAT DETECTED")
 		
 		# Show safety alert immediately
-		self.show_safety_alert("WEAPON")
+		self.show_safety_alert(threat_type)
 		
 		# Trigger emergency (sound + visual)
 		self.trigger_emergency()
@@ -424,6 +439,9 @@ class App(ctk.CTk):
 			self.safety_label2.pack(pady=(30, 20), padx=40)
 		elif threat_type == "HIGH_HR":
 			self.safety_label.configure(text="HIGH STRESS DETECTED\nARE YOU UNDER DURESS?")
+			self.safety_label.pack(pady=(30, 20), padx=40)
+		elif threat_type == "SKIMMER":
+			self.safety_label.configure(text="CARD SKIMMER DETECTED\nDO NOT INSERT CARD")
 			self.safety_label.pack(pady=(30, 20), padx=40)
 		else:
 			self.safety_label.configure(text="POTENTIAL THREAT DETECTED\nARE YOU SAFE?")
@@ -441,6 +459,15 @@ class App(ctk.CTk):
 			if self.sim.vitals_sim.coercion_active:
 				self.sim.vitals_sim.set_coercion(False)
 				self.coercion_btn.configure(text="Simulate Coercion", fg_color="orange")
+			# Reset skimmer simulation if active
+			if hasattr(self.sim, 'skimmer_sim_active') and self.sim.skimmer_sim_active:
+				self.sim.skimmer_sim_active = False
+				self.skimmer_btn.configure(text="Simulate Skimmer", fg_color="purple")
+
+		# Unlock ATM if it was locked
+		if self.atm_state == "LOCKED":
+			self.atm_state = "WELCOME"
+			self.update_atm_screen("WELCOME\nInsert Card to Begin")
 
 		self.is_safety_mode = False
 		self.safety_frame.place_forget()
@@ -489,8 +516,18 @@ class App(ctk.CTk):
 			if self.sim.vitals_sim.coercion_active:
 				self.sim.vitals_sim.set_coercion(False)
 				self.coercion_btn.configure(text="Simulate Coercion", fg_color="orange")
+			# Reset skimmer simulation if active
+			if hasattr(self.sim, 'skimmer_sim_active') and self.sim.skimmer_sim_active:
+				self.sim.skimmer_sim_active = False
+				self.skimmer_btn.configure(text="Simulate Skimmer", fg_color="purple")
+
+		# Unlock ATM if it was locked
+		if self.atm_state == "LOCKED":
+			self.atm_state = "WELCOME"
+			self.update_atm_screen("WELCOME\nInsert Card to Begin")
 
 		self.is_safety_mode = False
+		self.last_safety_confirm_time = time.time() # Add grace period after auto-reset
 		self.safety_frame.place_forget()
 		self.safety_label.pack_forget()
 		self.safety_label2.pack_forget()
