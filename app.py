@@ -15,7 +15,7 @@ import traceback
 class App(ctk.CTk):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
-		self.title("mmWave Simulator UI")
+		self.title("Automated Threat Observation Module (ATOM) Simulator")
 		self.geometry("1360x1000")
 
 		ctk.set_appearance_mode("dark")
